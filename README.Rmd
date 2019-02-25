@@ -1,0 +1,62 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r}
+# set-up:
+# get data from: http://wicid.ukdataservice.ac.uk/cider/wicid/downloads.php
+library(tidyverse)
+library(stplanr)
+library(sf)
+library(tmap)
+ttm()
+```
+
+
+Aim: Plot from the MSOAs below as origins, through to Bradford 039 (E02002221):
+
+Input data:
+
+```{r}
+
+
+unzip("wu02ew_v2.zip")
+od_all = read_csv("wu02ew_v2.csv")
+```
+
+```{r}
+zones_origin =  c("E02002197",
+  "E02002204",
+  "E02002200",
+  "E02002202",
+  "E02002207",
+  "E02002216"
+  )
+zones_destination = "E02002221"
+od_all_small = od_all %>%
+ filter(`Area of residence` %in% zones_origin &
+   `Area of workplace` %in% zones_destination
+   )
+```
+
+```{r}
+z = read_sf("https://github.com/npct/pct-outputs-regional-notR/raw/master/commute/msoa/west-yorkshire/z.geojson")
+desire_lines = od2line(flow = od_all_small, z)
+desire_lines$distance = as.numeric(st_length(desire_lines)) / 1000
+mapview::mapview(desire_lines, zcol = "All categories: Age 16 and over")
+# tm_shape(desire_lines) +
+#   tm_lines(col = "All categories: Age 16 and over")
+d = desire_lines %>% 
+  select(
+    `Area of workplace`,
+    commutes = `All categories: Age 16 and over`,
+    distance) %>% 
+  st_drop_geometry()
+knitr::kable(d)
+
+sum(d$commutes)
+```
+
+Result: http://rpubs.com/RobinLovelace/470831
